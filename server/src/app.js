@@ -3,6 +3,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 
+// ... imports ...
+
+const app = express();
+
+// Trust Render's reverse proxy for express-rate-limit and IP detection
+app.set('trust proxy', 1);
+
 const authRoutes = require('./routes/authRoutes');
 const wardenRoutes = require('./routes/wardenRoutes');
 const postRoutes = require('./routes/postRoutes');
@@ -12,7 +19,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
-const app = express();
+
 
 // Configure CORS to dynamically accept requests from Vercel and local development
 app.use(
