@@ -1,289 +1,204 @@
-# 🏷️ Hostel Lost & Found
+# Hostel Lost & Found
 
-An intelligent full-stack MERN application designed for student residences and hostels to track lost and found belongings. The platform automates candidate discovery using **semantic text embeddings** and **visual CLIP similarity**, prevents fraudulent item recovery via a **cryptographic claim verification protocol**, and provides wardens with administrative oversight and real-time operational analytics.
+A MERN web app that reunites hostel residents with their lost belongings. Residents post lost or found items, the app **matches them automatically** using semantic text similarity plus location and time, and a **verified claim flow** makes sure items go to their real owners, with almost no manual moderation.
 
----
+> **Live demo:** _add link here_ &nbsp;|&nbsp; **Demo video:** _add link here_
 
-## 📌 Problem Statement
-
-Hostel environments face recurring losses of everyday essentials (chargers, keys, student ID cards, water bottles, earphones, umbrellas). Traditional manual bulletin boards and messaging groups suffer from:
-1. **Vocabulary Mismatch**: A resident posting *"misplaced my navy blue AirPods case"* will not match someone reporting *"found a dark blue earphone sleeve"* via keyword search.
-2. **False Claims & Opportunistic Theft**: Openly listing items allows malicious actors to claim expensive gadgets without proof of ownership.
-3. **Cross-Building Noise**: Students in Hostel A frequently see items lost in Hostel B, polluting notification feeds.
-4. **Stale Data & Clutter**: Posts remain active indefinitely, accumulating dead records and consuming server storage.
-
-**Hostel Lost & Found** addresses these challenges with **hostel-scoped isolation**, **AI-assisted semantic & visual similarity matching**, and a **private challenge-response verification handshake** before revealing sensitive contact details.
+> All data in this repository, screenshots, and demo is **fake**. No real student data is included.
 
 ---
 
-## 🏛️ System Architecture
+## The problem
 
-```mermaid
-flowchart TD
-    subgraph Client["Frontend Client (React + Vite + Tailwind CSS)"]
-        UI["Web Interface (Feed, Post Form, Claims, Warden Panel)"]
-        SocketClient["Socket.io Client (Real-Time Notifications)"]
-    end
+In most hostels, lost and found runs on a WhatsApp group where "anyone found a black bottle?" gets buried within minutes, or on a physical desk nobody checks. Even when both sides post, they describe the same item in different words ("blue earphone case" vs "AirPods cover"), so keyword search fails and the two people never connect.
 
-    subgraph Server["Backend Server (Node.js & Express)"]
-        AuthMiddleware["JWT Auth & Hostel Scoping Middleware"]
-        PostController["Post & Claim Controllers"]
-        
-        subgraph AI_Engine["Matching & Embedding Engine"]
-            TextEmbed["Xenova/all-MiniLM-L6-v2<br/>(384-dim Dense Embeddings)"]
-            ImageEmbed["Xenova/clip-vit-base-patch32<br/>(512-dim Visual Embeddings)"]
-            Scorer["Hybrid Scorer<br/>Cosine Sim + Spot Adjacency + Time Decay"]
-            RetryQueue["Asynchronous In-Memory Retry Queue"]
-        end
+## What it does
 
-        CronWorker["Node-Cron Background Expiry & Storage Purge"]
-        SocketServer["Socket.io Server (User Rooms)"]
-    end
+- **Verified residents only.** Sign-up is checked against the hostel's resident roster and confirmed with an email OTP sent to the college email on file. No manual approval is needed.
+- **Post lost or found items** with photos, category, spot in the hostel, and time.
+- **Automatic matching.** Every new post is compared with open posts of the opposite type. Matches are ranked by a combined score of text meaning, location, and time.
+- **Claim verification.** Found-item posts carry private questions only the real owner can answer. Answers are scored automatically:
+  - high similarity: auto-approved
+  - low similarity: auto-rejected, with a strike on the claimant
+  - in between: sent to the finder to decide
+- **Live notifications** (Socket.io) for strong matches, new claims, and decisions.
+- **Self-moderation.** Posts that get reports from several different users are hidden automatically. Repeated failed claims trigger a timed cooldown.
+- **Background jobs** expire old posts, clean up images, remind finders to hand items in, and retry failed embeddings.
 
-    subgraph Database["Data Layer (MongoDB Atlas / Local)"]
-        MongoDb[(MongoDB Database)]
-        LocalUploads["Local /server/uploads Storage"]
-    end
+## How matching works
 
-    UI -->|REST API Requests| AuthMiddleware
-    AuthMiddleware --> PostController
-    PostController --> MongoDb
-    PostController -->|Multipart Uploads| LocalUploads
-    PostController --> AI_Engine
-    AI_Engine --> MongoDb
-    SocketServer -->|Real-Time Push Events| SocketClient
-    CronWorker --> MongoDb
-    CronWorker -->|Purge Old Images| LocalUploads
-```
+1. When a post is saved, its text (`title. category. description`) is converted into an embedding with `all-MiniLM-L6-v2`, running inside Node.js through Transformers.js.
+2. The new post is compared with every open post of the opposite type in the **same hostel**, using cosine similarity.
+3. A location/time score is added:
+   - same spot = 1.0, nearby spots score lower (configurable adjacency map)
+   - the score decays as days pass, and drops to 0 if the found date is more than 14 days before the lost date
+4. Final score:
 
----
+   ```
+   finalScore = 0.7 × textScore + 0.3 × locationTimeScore
+   ```
 
-## ✨ Features
+   (With image matching enabled: `0.5 text + 0.3 image + 0.2 location/time`.)
+5. Matches above `MATCH_THRESHOLD` are saved, keeping the top 5 per post.
 
-### 1. Multi-Tenant Scoping & Authentication
-- **Hostel Isolation**: Strict scoping on all database queries ensures residents only view, claim, or match with items posted within their own hostel.
-- **Warden Gated Approval**: New resident accounts require warden verification before accessing the community feed.
-- **Role-Based Access Control**: Granular permissions distinguishing `residents` from `wardens`.
+### Evaluation
 
-### 2. Dual-Channel Semantic Matching Engine
-- **Dense Text Embeddings**: Powered by `@huggingface/transformers` (`Xenova/all-MiniLM-L6-v2`), converting `"title. category. description"` into 384-dimensional dense vectors.
-- **Visual CLIP Embeddings**: Uses `Xenova/clip-vit-base-patch32` to calculate visual similarity across uploaded photos.
-- **Location-Time Decay**: Rewards spot proximity via dynamic hostel adjacency graphs and applies exponential time decay (\(e^{-\Delta t / 3}\)).
-- **Resilient Retry Queue**: Posting is non-blocking and never fails if AI models are warming up; jobs are enqueued in an asynchronous retry queue.
+Keyword search is the baseline. I wrote 50 labeled lost/found pairs, each using different wording for the same item, and compared both approaches.
 
-### 3. Claim Verification Protocol & Anti-Abuse
-- **Zero-Knowledge Challenge Flow**: Finders specify 1–3 verification questions and secret `hiddenDetails` (e.g., engraving, serial number, wallpaper). Sensitive secrets are **never** returned via public endpoints.
-- **Handover Contact Reveal**: Only upon claim approval are the claimant and finder's room numbers exchanged to coordinate a safe physical handover.
-- **Strike System**: 3 rejected fraudulent claims suspend a resident's claiming rights until manually reset by a warden.
-- **Rate Limiting**: Hard-capped at 3 claim attempts per resident every 24 hours.
+| Method | Precision@1 | Precision@3 |
+|---|---|---|
+| Keyword baseline (TF-IDF) | _fill in_ | _fill in_ |
+| Embedding matcher | _fill in_ | _fill in_ |
 
-### 4. Real-Time Notifications & Cron Maintenance
-- **WebSockets via Socket.io**: Live notifications for high-confidence AI matches, claim submissions, approvals, and rejections.
-- **Automated Lifecycle Maintenance**: Nightly `node-cron` worker automatically marks 30-day-old open posts as `expired` and purges physical image uploads for items returned more than 7 days ago.
+Run it yourself:
 
-### 5. Warden Analytics Dashboard
-- Metrics tracking **Items Posted**, **Items Returned**, **Overall Return Rate %**, and **Average Resolution Time (Hours/Days)**.
-- Category breakdowns and AI match engine throughput tracking.
-
----
-
-## 🧮 How Matching Works
-
-When a post is created, the system compares it against all open posts of the opposite type (`lost` vs `found`) within the **same hostel** and compatible categories.
-
-$$\text{FinalScore} = w_{\text{text}} \cdot S_{\text{text}} + w_{\text{image}} \cdot S_{\text{image}} + w_{\text{locTime}} \cdot S_{\text{locTime}}$$
-
-### 1. Text Similarity ($S_{\text{text}}$)
-Cosine similarity between normalized 384-dimensional embeddings generated from `"title. category. description"`:
-
-$$\cos(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\|_2 \|\mathbf{v}\|_2}$$
-
-### 2. Image Similarity ($S_{\text{image}}$)
-Cosine similarity between 512-dimensional CLIP image embeddings.
-> **Dynamic Weight Redistribution**: If one or both items lack images, the image weight is redistributed proportionally to text and location-time scores ($w_{\text{text}} \approx 0.714$, $w_{\text{locTime}} \approx 0.286$).
-
-### 3. Location & Time Score ($S_{\text{locTime}}$)
-$$S_{\text{locTime}} = S_{\text{location}} \times S_{\text{time}}$$
-
-- **Location Adjacency ($S_{\text{location}}$)**:
-  - `1.0` if items share the exact spot.
-  - `0.6` if spots are defined as adjacent in `Hostel.spotAdjacency` (e.g., Common Room $\leftrightarrow$ Mess, 1st Floor $\leftrightarrow$ 2nd Floor).
-  - `0.2` for unrelated spots in the same hostel.
-- **Temporal Decay ($S_{\text{time}}$)**:
-  - If a found post predates the lost post by $> 14$ days: $S_{\text{time}} = 0$.
-  - Otherwise, exponential half-life decay: $S_{\text{time}} = \exp\left(-\frac{\Delta\text{days}}{3}\right)$.
-
-Matches scoring above `MATCH_THRESHOLD` (default `0.55`) are saved, retaining the top 5 candidates. Scores above `HIGH_THRESHOLD` (`0.70`) trigger real-time instant alerts.
-
----
-
-## 📊 Evaluation Results: Embeddings vs. Keyword Baseline
-
-A benchmark evaluating **50 labeled lost/found test pairs** with contrasting vocabulary (e.g., *"blue earphone case"* vs. *"AirPods cover"*, *"black steel bottle"* vs. *"dark flask"*) was executed using `server/eval/evaluate.js`:
-
-| Metric | TF-IDF Baseline | Dense Embedding (`all-MiniLM-L6-v2`) | Absolute Improvement |
-| :--- | :---: | :---: | :---: |
-| **Precision@1** | 78.0% | **92.0%** | **+14.0%** |
-| **Precision@3** | 90.0% | **100.0%** | **+10.0%** |
-| **Mean Reciprocal Rank (MRR)** | 0.849 | **0.957** | **+0.108** |
-
-### Benchmark Observations
-- **Lexical Gap Resolution**: Keyword TF-IDF fails when students describe identical objects using different synonyms (e.g., *"spectacles"* vs. *"reading glasses"* or *"hoodie"* vs. *"pullover"*).
-- **Dense Embedding Precision**: Semantic embeddings clustered items into identical topological vector neighborhoods, achieving 100% Top-3 retrieval.
-
----
-
-## ⚙️ Environment Variables
-
-### Server (`server/.env`)
-| Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `PORT` | `5000` | Port for the Express HTTP server |
-| `NODE_ENV` | `development` | Runtime environment (`development`, `test`, `production`) |
-| `MONGODB_URI` | `mongodb://127.0.0.1:27017/hostel_lost_found` | MongoDB connection string |
-| `JWT_SECRET` | *(Random secret string)* | Private key for signing JSON Web Tokens |
-| `JWT_EXPIRES_IN` | `7d` | Token expiry duration |
-| `CLIENT_URL` | `http://localhost:5173` | Allowed CORS frontend origin |
-| `MATCH_THRESHOLD`| `0.55` | Minimum composite score to persist a candidate match |
-| `HIGH_THRESHOLD` | `0.70` | Threshold triggering urgent WebSocket notification |
-
-### Client (`client/.env`)
-| Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `VITE_API_BASE_URL` | `http://localhost:5000/api` | Base URL for backend REST endpoints |
-| `VITE_SOCKET_URL` | `http://localhost:5000` | Backend Socket.io connection URL |
-
----
-
-## 🚀 Quickstart & Setup
-
-### Option 1: Docker Compose (Recommended for Production / Local Dev)
-
-Ensure Docker Desktop is installed and running:
-
-```bash
-# Clone the repository
-git clone <repo-url>
-cd hostel-lost-found
-
-# Build and start MongoDB, Express Server, and Client with Nginx
-docker-compose up --build
-```
-
-- **Frontend App**: [http://localhost:3000](http://localhost:3000)
-- **Backend API**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
-- **MongoDB**: `localhost:27017`
-
----
-
-### Option 2: Manual Local Development
-
-#### Prerequisites
-- Node.js 18+ (Node.js 20 LTS recommended)
-- MongoDB running locally on `127.0.0.1:27017`
-
-#### 1. Setup & Seed Backend
-```bash
-cd server
-npm install
-
-# Seed sample hostel, warden, residents, and 20 contrasting posts
-npm run seed
-
-# Run the test suite (47 unit & integration tests)
-npm test
-
-# Start Express server with auto-reload
-npm run dev
-```
-
-#### 2. Setup Frontend
-```bash
-cd ../client
-npm install
-npm run dev
-```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-#### Demo Credentials (Pre-Seeded)
-- **Hostel Invite Code**: `HOSTEL2026`
-- **Warden Login**: `warden@hostel.edu` / `Password123!`
-- **Approved Resident**: `aarav@student.edu` / `Password123!`
-- **Approved Resident 2**: `diya@student.edu` / `Password123!`
-- **Pending Resident (To test approvals)**: `kunal@student.edu` / `Password123!`
-
----
-
-## 🧪 Testing & Verification
-
-The backend includes a comprehensive test suite covering authentication, cross-hostel scoping, scoring mathematics, claim flows, and security:
-
-```bash
-cd server
-npm test
-```
-
-### Test Coverage Highlights
-- `tests/phase1.test.js`: Authentication, registration with invite codes, post CRUD, image upload validation, and warden approvals.
-- `tests/scoring.test.js`: Cosine similarity, spot adjacency graph penalties, exponential time decay, and proportional image weight redistribution.
-- `tests/phase4.test.js`: Claim submissions, 3-strike suspension rule, 24-hour rate limiting, room number handshake disclosure, and midnight cron expiry.
-- `tests/phase5.test.js`: Proves that a user from Hostel A cannot read, list, claim, or match with a post from Hostel B, confirms zero-leakage of `hiddenDetails`, and validates warden `/api/stats` calculations.
-
-To run the offline semantic evaluation benchmark:
 ```bash
 cd server
 node eval/evaluate.js
 ```
 
----
+## How claims work
 
-## 📐 Design Decisions & Trade-offs
+| Claim score (lowest answer similarity) | Result |
+|---|---|
+| ≥ `AUTO_APPROVE` (default 0.85) | Auto-approved, post marked returned |
+| < `AUTO_REJECT` (default 0.40) | Auto-rejected, claimant gets a strike |
+| In between | Finder is asked to approve or reject |
 
-1. **Unified MERN Architecture vs. Python Microservice**:
-   - *Decision*: Inlined `@huggingface/transformers` directly inside Node.js rather than maintaining a separate Python FastAPI sidecar.
-   - *Trade-off*: Simplifies DevOps to a single Node.js runtime and eliminates inter-service HTTP serialization latency. High-concurrency deployments can scale out Node cluster workers or offload embeddings to an external vector pipeline.
+- 3 strikes lead to a 7-day claim block (no admin needed).
+- Maximum 3 claims per user per day.
+- On approval, both sides see each other's **room number** to arrange the handover. Emails and scholar numbers are never shown.
 
-2. **Asynchronous Non-Blocking Embedding Queue**:
-   - *Decision*: When a resident posts an item, the post is saved immediately to MongoDB with empty vector embeddings, and an asynchronous task processes embeddings in the background with retry backoff.
-   - *Benefit*: Resident never encounters a slow or failing request if an ONNX model is warming up.
+## Architecture
 
-3. **Two-Stage Handover Handshake**:
-   - *Decision*: Room numbers are masked until a claim is explicitly approved by the finder or warden.
-   - *Benefit*: Protects resident privacy and prevents harassment in living quarters while ensuring seamless physical item handovers.
+```mermaid
+flowchart LR
+  C[React client] -->|REST + JWT| A[Express API]
+  C <-->|Socket.io| A
+  A --> M[(MongoDB)]
+  A --> E[Embedding service<br/>Transformers.js]
+  A --> J[node-cron jobs]
+  A --> S[SMTP: email OTP]
+```
 
-4. **Proportional Weight Redistribution**:
-   - *Decision*: Rather than failing image scoring when photos are missing, the 30% image weight is redistributed proportionally to text (71.4%) and spatio-temporal metrics (28.6%).
-   - *Benefit*: Fair comparison across diverse post types without penalizing posts without photos.
+All of it runs as a single Node.js server. The matcher is a module inside it, not a separate service.
 
----
+## Tech stack
 
-## 🌐 Deployment Guide
+- **Frontend:** React (Vite), React Router, Axios, Tailwind CSS
+- **Backend:** Node.js, Express, MongoDB, Mongoose
+- **Matching:** `@huggingface/transformers` (MiniLM for text, CLIP for images)
+- **Auth:** JWT, bcrypt, email OTP (nodemailer)
+- **Real-time and jobs:** Socket.io, node-cron
+- **Quality:** Jest, Supertest, zod validation, helmet, express-rate-limit
+- **Dev and deploy:** Docker Compose, Vercel (client), Render (server), MongoDB Atlas
 
-### 1. Database: MongoDB Atlas
-1. Create a free M0 cluster on [MongoDB Atlas](https://www.mongodb.com/atlas).
-2. Create a database user and add `0.0.0.0/0` (or host IPs) to Network Access.
-3. Obtain connection URI: `mongodb+srv://<user>:<password>@cluster0.mongodb.net/hostel_lost_found?retryWrites=true&w=majority`.
+## Security and privacy decisions
 
-### 2. Backend Server: Render / Railway
-1. Push the code to GitHub.
-2. Create a new **Web Service** on [Render](https://render.com) pointing to the root repository with Root Directory set to `server`.
-3. Build Command: `npm install`
-4. Start Command: `node src/server.js`
-5. Environment Variables:
-   - `MONGODB_URI`: Atlas connection string
-   - `JWT_SECRET`: 64-character random string
-   - `NODE_ENV`: `production`
-   - `CLIENT_URL`: Your deployed frontend URL
-   - `MATCH_THRESHOLD`: `0.55`
-   - `HIGH_THRESHOLD`: `0.70`
-> *Note on Memory*: The ONNX models (`all-MiniLM-L6-v2` & CLIP) require ~512MB RAM. Ensure your Render instance provides at least 512MB–1GB RAM.
+- **Hostel scoping on every query.** A user in one hostel can never read, claim, or match with another hostel's data. This is covered by tests.
+- **Private fields are stripped.** `hiddenDetails` and expected answers are returned only to the poster and admins.
+- **Roster-based sign-up with OTP.** Scholar numbers aren't secret, so identity is confirmed through the college email. The start-signup response is identical whether or not a scholar number exists, so the roster can't be probed.
+- **Minimal data.** The roster holds only scholar number, room, and college email.
+- **No sensitive logging.** Scholar numbers, emails, and OTPs are never logged.
+- **Rate limits** on auth, claims, and reporting.
 
-### 3. Frontend Client: Vercel
-1. Create a **New Project** on [Vercel](https://vercel.com) pointing to `client`.
-2. Framework Preset: `Vite`.
-3. Build Command: `npm run build`
-4. Output Directory: `dist`
-5. Environment Variables:
-   - `VITE_API_BASE_URL`: `https://your-server-app.onrender.com/api`
-   - `VITE_SOCKET_URL`: `https://your-server-app.onrender.com`
-6. Deploy!
+## Getting started
+
+### Prerequisites
+- Node.js 18+
+- MongoDB (local or Atlas)
+- An SMTP account for OTP emails (Mailtrap or a Gmail app password works for development)
+
+### Setup
+
+```bash
+git clone <your-repo-url>
+cd hostel-lost-found
+
+# server
+cd server
+cp .env.example .env      # fill in the values below
+npm install
+npm run seed              # creates a FAKE hostel, roster, and sample posts
+npm run dev
+
+# client (new terminal)
+cd client
+npm install
+npm run dev
+```
+
+The first run downloads the embedding model, so it takes a little longer.
+
+### Environment variables (`server/.env`)
+
+| Variable | Purpose |
+|---|---|
+| `PORT` | Server port |
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret for signing tokens |
+| `CLIENT_URL` | Allowed CORS origin |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Email OTP delivery |
+| `MATCH_THRESHOLD` | Minimum final score to create a match (default 0.55) |
+| `HIGH_THRESHOLD` | Score that triggers a live "strong match" notification |
+| `AUTO_APPROVE`, `AUTO_REJECT` | Claim similarity bands (defaults 0.85 / 0.40) |
+| `REPORT_THRESHOLD` | Distinct reports needed to auto-hide a post (default 3) |
+
+### Importing a real roster (for an actual deployment)
+
+```bash
+node scripts/importRoster.js path/to/roster.csv "Hostel Name"
+```
+
+CSV columns: `scholarNo, room, email`. Residents missing from a newer file are deactivated. **Never commit roster files.** They are listed in `.gitignore`.
+
+### Tests
+
+```bash
+cd server && npm test
+```
+
+Tests cover roster-only sign-up, OTP limits, hostel isolation, private-field leaks, claim bands, strikes and cooldowns, report auto-hide, and scoring functions.
+
+## Project structure
+
+```
+hostel-lost-found/
+├── client/              # React app
+├── server/
+│   ├── src/
+│   │   ├── models/      # Hostel, Resident, User, Post, Match, Claim, Report, Notification
+│   │   ├── routes/ controllers/ middleware/
+│   │   ├── services/    # embedding, scoring, matching, claims
+│   │   └── jobs/        # expiry, reminders, embedding retry
+│   ├── scripts/         # seed.js, importRoster.js
+│   ├── eval/            # pairs.json, evaluate.js
+│   └── tests/
+├── docker-compose.yml
+└── README.md
+```
+
+## Design decisions and trade-offs
+
+- **Embeddings in Node, not a Python service.** Keeps the whole app one language and one deployment. Transformers.js is slower than Python, but a hostel's post volume is small.
+- **Plain arrays and cosine similarity instead of a vector database.** At a few hundred posts, a vector DB adds complexity with no benefit.
+- **Three-band claim decisions.** Fully automatic approval risks wrong handovers, so the middle band goes to the finder.
+- **Timed cooldowns instead of manual resets,** so no admin is needed for routine abuse.
+- **Multi-hostel data model from day one.** Every record carries a `hostel`, so supporting more hostels needs no rewrite.
+- **Small evaluation set.** 50 pairs is enough to show the trend, not to claim production accuracy.
+
+## Roadmap
+
+- [ ] CLIP image matching and photo-based category suggestion
+- [ ] Match a found ID card to its owner through the roster
+- [ ] In-app chat for handover
+- [ ] Borrow/lend board for everyday items (chargers, irons, buckets)
+- [ ] PWA with push notifications
+
+## Author
+
+**Rihansh** &nbsp;·&nbsp; _add GitHub, LinkedIn, and email links_
+
+## License
+
+MIT
