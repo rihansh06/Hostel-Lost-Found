@@ -1,0 +1,26 @@
+# Node dependencies
+node_modules/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Server uploads & logs
+server/uploads/*
+!server/uploads/.gitkeep
+logs/
+*.log
+
+# Matcher virtual environment & cache
+__pycache__/
+*.py[cod]
+*$py.class
+matcher/venv/
+.pytest_cache/
+
+# OS files
+.DS_Store
+Thumbs.db
