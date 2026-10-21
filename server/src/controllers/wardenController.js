@@ -37,8 +37,21 @@ const getWardenPosts = async (req, res, next) => {
   }
 };
 
+const getMatchBreakdown = async (req, res, next) => {
+  try {
+    const breakdown = await wardenService.getMatchBreakdown(req.user.hostel, req.params.id);
+    res.status(200).json({
+      success: true,
+      data: breakdown,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getPendingUsers,
   approveUser,
   getWardenPosts,
+  getMatchBreakdown,
 };

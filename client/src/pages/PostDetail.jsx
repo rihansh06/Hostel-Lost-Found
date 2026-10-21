@@ -13,8 +13,11 @@ import {
   ArrowLeft,
   AlertCircle,
   Sparkles,
-  ExternalLink,
   ChevronRight,
+  Cpu,
+  X,
+  Sliders,
+  Check,
 } from 'lucide-react';
 
 const categoryLabels = {
@@ -38,6 +41,11 @@ export default function PostDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Warden Debug Modal State
+  const [debugMatchId, setDebugMatchId] = useState(null);
+  const [debugData, setDebugData] = useState(null);
+  const [loadingDebug, setLoadingDebug] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -104,6 +112,21 @@ export default function PostDetail() {
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete post');
       setActionLoading(false);
+    }
+  };
+
+  const openDebugModal = async (matchId) => {
+    setDebugMatchId(matchId);
+    setLoadingDebug(true);
+    setDebugData(null);
+    try {
+      const res = await api.get(`/api/warden/matches/${matchId}/breakdown`);
+      setDebugData(res.data.data);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to load match breakdown');
+      setDebugMatchId(null);
+    } finally {
+      setLoadingDebug(false);
     }
   };
 
@@ -345,7 +368,7 @@ export default function PostDetail() {
         </div>
       </div>
 
-      {/* PHASE 2: POSSIBLE MATCHES SECTION */}
+      {/* PHASE 2 & PHASE 3: POSSIBLE MATCHES SECTION */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
@@ -355,7 +378,7 @@ export default function PostDetail() {
             <div>
               <h2 className="text-lg font-bold text-slate-900">Possible Matches</h2>
               <p className="text-xs text-slate-500">
-                AI text similarity and location-time compatibility analysis
+                Automated similarity scoring via MiniLM text embeddings, CLIP visual features, and location-time compatibility
               </p>
             </div>
           </div>
@@ -397,6 +420,13 @@ export default function PostDetail() {
                         {match.confidence} Confidence ({Math.round(match.finalScore * 100)}%)
                       </span>
 
+                      {/* Image match pill if visual match was computed */}
+                      {match.imageScore > 0 && (
+                        <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                          🖼️ Visual Match: {Math.round(match.imageScore * 100)}%
+                        </span>
+                      )}
+
                       <span className="text-xs font-medium text-slate-500">
                         {match.reason}
                       </span>
@@ -419,7 +449,19 @@ export default function PostDetail() {
                     </div>
                   </div>
 
-                  <div className="shrink-0">
+                  <div className="flex items-center space-x-2 shrink-0">
+                    {/* Warden Admin Debug Breakdown Button */}
+                    {isWarden && (
+                      <button
+                        onClick={() => openDebugModal(match.matchId)}
+                        title="Inspect Score Breakdown (Warden Only)"
+                        className="inline-flex items-center px-3 py-2 rounded-xl text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-colors"
+                      >
+                        <Sliders className="w-3.5 h-3.5 mr-1 text-purple-600" />
+                        <span>Score Math</span>
+                      </button>
+                    )}
+
                     <Link
                       to={`/posts/${opp._id}`}
                       className="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
@@ -434,6 +476,141 @@ export default function PostDetail() {
           </div>
         )}
       </div>
+
+      {/* WARDEN DEBUG / SCORE BREAKDOWN MODAL */}
+      {debugMatchId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <Sliders className="w-5 h-5 text-purple-600" />
+                <h3 className="font-bold text-slate-900">Match Score Breakdown</h3>
+              </div>
+              <button
+                onClick={() => setDebugMatchId(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {loadingDebug || !debugData ? (
+              <div className="py-8 text-center text-xs text-slate-500">
+                <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                Computing score breakdown components...
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                {/* Composite Score Banner */}
+                <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-between">
+                  <div>
+                    <div className="text-purple-700 font-bold uppercase tracking-wider text-[10px]">
+                      Final Combined Match Score
+                    </div>
+                    <div className="text-2xl font-black text-purple-950">
+                      {(debugData.scoringBreakdown.finalScore * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold ${getConfidenceBadge(
+                        debugData.scoringBreakdown.confidenceBadge
+                      )}`}
+                    >
+                      {debugData.scoringBreakdown.confidenceBadge} Confidence
+                    </span>
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      Threshold: {(debugData.scoringBreakdown.threshold * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Score Components breakdown table */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                  {/* Text component */}
+                  <div className="p-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-slate-800">Dense Text Similarity</div>
+                      <div className="text-slate-500 text-[10px]">
+                        all-MiniLM-L6-v2 cosine similarity
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-slate-900">
+                        {(debugData.scoringBreakdown.textScore * 100).toFixed(1)}%
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Weight: {(debugData.scoringBreakdown.weightsApplied.text * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Image component */}
+                  <div className="p-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-slate-800">Visual Feature Similarity</div>
+                      <div className="text-slate-500 text-[10px]">
+                        clip-vit-base-patch32 embedding
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-slate-900">
+                        {debugData.scoringBreakdown.hasBothImages
+                          ? `${(debugData.scoringBreakdown.imageScore * 100).toFixed(1)}%`
+                          : 'N/A (No Photos)'}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {debugData.scoringBreakdown.weightsApplied.redistributed
+                          ? 'Weight redistributed to Text & Location'
+                          : `Weight: ${(debugData.scoringBreakdown.weightsApplied.image * 100).toFixed(1)}%`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location & Time component */}
+                  <div className="p-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-slate-800">Location & Time Compatibility</div>
+                      <div className="text-slate-500 text-[10px]">
+                        {debugData.scoringBreakdown.locationTimeScore.spotRelation} spot •{' '}
+                        {Math.abs(debugData.scoringBreakdown.locationTimeScore.diffDays)} days difference
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-slate-900">
+                        {(debugData.scoringBreakdown.locationTimeScore.score * 100).toFixed(1)}%
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Weight: {(debugData.scoringBreakdown.weightsApplied.locationTime * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Math breakdown formula explanation */}
+                <div className="p-3 bg-slate-50 rounded-xl text-[11px] text-slate-600 font-mono">
+                  Final = ({debugData.scoringBreakdown.textScore.toFixed(3)} ×{' '}
+                  {debugData.scoringBreakdown.weightsApplied.text.toFixed(3)}) + (
+                  {debugData.scoringBreakdown.locationTimeScore.score.toFixed(3)} ×{' '}
+                  {debugData.scoringBreakdown.weightsApplied.locationTime.toFixed(3)})
+                  {debugData.scoringBreakdown.hasBothImages &&
+                    ` + (${debugData.scoringBreakdown.imageScore.toFixed(3)} × ${debugData.scoringBreakdown.weightsApplied.image.toFixed(3)})`}{' '}
+                  = <span className="font-bold text-slate-900">{debugData.scoringBreakdown.finalScore}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="text-right pt-2">
+              <button
+                onClick={() => setDebugMatchId(null)}
+                className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-semibold hover:bg-slate-900"
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

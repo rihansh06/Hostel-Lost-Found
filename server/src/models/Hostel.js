@@ -18,6 +18,11 @@ const hostelSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    spotAdjacency: {
+      type: Map,
+      of: [String],
+      default: {},
+    },
   },
   { timestamps: true }
 );

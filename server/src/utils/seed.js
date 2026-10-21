@@ -39,6 +39,14 @@ const seedData = async () => {
         'Gym & Sports Complex',
         'Laundry Room',
       ],
+      spotAdjacency: {
+        'Mess / Dining Hall': ['Common Room'],
+        'Common Room': ['Mess / Dining Hall', '1st Floor Corridor'],
+        '1st Floor Corridor': ['Common Room', 'Laundry Room', 'Library / Study Area'],
+        'Library / Study Area': ['1st Floor Corridor'],
+        'Gym & Sports Complex': ['Common Room'],
+        'Laundry Room': ['1st Floor Corridor'],
+      },
     });
     console.log(`Created Hostel: ${hostel.name} (Invite Code: ${hostel.inviteCode})`);
 

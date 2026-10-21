@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
 const Post = require('../models/Post');
 const Match = require('../models/Match');
+const Hostel = require('../models/Hostel');
 const config = require('../config/scoring');
 const embeddingService = require('./embeddingService');
+const imageEmbeddingService = require('./imageEmbeddingService');
 const scoringService = require('./scoringService');
 
 // In-memory retry queue for posts whose embeddings failed on creation
@@ -100,7 +102,21 @@ const processPostEmbeddingAndMatching = async (postId) => {
     }
   }
 
-  // 2. Perform pairwise matching against opposite type posts
+  // 2. Generate image embedding if post has images and embedding is missing
+  if (post.images && post.images.length > 0 && (!post.imageEmbedding || post.imageEmbedding.length === 0)) {
+    try {
+      const imgEmbedding = await imageEmbeddingService.getImageEmbedding(post.images[0]);
+      if (imgEmbedding && imgEmbedding.length > 0) {
+        post.imageEmbedding = imgEmbedding;
+        await post.save();
+        console.log(`[MatchingService] Generated visual feature embedding for post ${post._id}`);
+      }
+    } catch (imgErr) {
+      console.warn(`[MatchingService] Image embedding skipped for post ${post._id}:`, imgErr.message);
+    }
+  }
+
+  // 3. Perform pairwise matching against opposite type posts
   await findAndSaveMatches(post);
 };
 
@@ -112,6 +128,7 @@ const findAndSaveMatches = async (post) => {
     return [];
   }
 
+  const hostel = await Hostel.findById(post.hostel);
   const oppositeType = post.type === 'lost' ? 'found' : 'lost';
 
   // Category compatible: same category or 'other'
@@ -135,7 +152,7 @@ const findAndSaveMatches = async (post) => {
     const lostPost = post.type === 'lost' ? post : candidate;
     const foundPost = post.type === 'found' ? post : candidate;
 
-    const scores = scoringService.computeFinalScore(lostPost, foundPost, post.hostel);
+    const scores = scoringService.computeFinalScore(lostPost, foundPost, hostel);
 
     if (scores.finalScore >= config.matchThreshold) {
       // Upsert match document with unique compound key
@@ -184,7 +201,10 @@ const pruneTopMatches = async (postId) => {
 /**
  * Generate human-readable match reason based on score components
  */
-const getMatchReason = (textScore, locationTimeScore, finalScore) => {
+const getMatchReason = (textScore, locationTimeScore, finalScore, imageScore = 0) => {
+  if (imageScore >= 0.70 && textScore >= 0.60) {
+    return 'Matching photo features and strong description similarity';
+  }
   if (textScore >= 0.75 && locationTimeScore >= 0.75) {
     return 'High description similarity & matching location';
   }
@@ -241,7 +261,7 @@ const getMatchesForPost = async (postId, hostelId) => {
       imageScore: m.imageScore,
       locationTimeScore: m.locationTimeScore,
       confidence,
-      reason: getMatchReason(m.textScore, m.locationTimeScore, m.finalScore),
+      reason: getMatchReason(m.textScore, m.locationTimeScore, m.finalScore, m.imageScore),
       status: m.status,
       oppositePost,
     };

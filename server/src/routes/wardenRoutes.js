@@ -9,5 +9,6 @@ router.use(requireWarden);
 router.get('/pending-users', wardenController.getPendingUsers);
 router.patch('/users/:id/approve', wardenController.approveUser);
 router.get('/posts', wardenController.getWardenPosts);
+router.get('/matches/:id/breakdown', wardenController.getMatchBreakdown);
 
 module.exports = router;

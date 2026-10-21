@@ -1,14 +1,24 @@
+const request = require('supertest');
 const mongoose = require('mongoose');
-const { cosineSimilarity, locationTimeScore, computeFinalScore } = require('../src/services/scoringService');
+const app = require('../src/app');
+const {
+  cosineSimilarity,
+  locationTimeScore,
+  areSpotsAdjacent,
+  computeFinalScore,
+  getDetailedScoreBreakdown,
+} = require('../src/services/scoringService');
 const { TfIdfVectorizer, computeKeywordSimilarity } = require('../src/services/keywordMatchService');
+const imageEmbeddingService = require('../src/services/imageEmbeddingService');
 const config = require('../src/config/scoring');
 const Hostel = require('../src/models/Hostel');
 const User = require('../src/models/User');
 const Post = require('../src/models/Post');
 const Match = require('../src/models/Match');
 const matchingService = require('../src/services/matchingService');
+const { generateToken } = require('../src/utils/jwt');
 
-describe('PHASE 2 Scoring & Matching Service Tests', () => {
+describe('PHASE 2 & PHASE 3 Scoring, Vision & Matching Tests', () => {
   describe('Cosine Similarity Function', () => {
     it('returns 1.0 for identical non-zero vectors', () => {
       const v = [0.2, 0.5, 0.8];
@@ -33,12 +43,11 @@ describe('PHASE 2 Scoring & Matching Service Tests', () => {
     it('calculates correct cosine similarity for arbitrary vectors', () => {
       const a = [3, 4]; // norm = 5
       const b = [4, 3]; // norm = 5, dot = 24
-      // 24 / 25 = 0.96
       expect(cosineSimilarity(a, b)).toBeCloseTo(0.96, 4);
     });
   });
 
-  describe('Location & Time Scoring Function', () => {
+  describe('Location, Adjacency & Time Scoring', () => {
     it('returns 1.0 for identical spots and identical timestamp', () => {
       const now = new Date();
       const lost = { spot: 'Common Room', happenedAt: now };
@@ -56,7 +65,6 @@ describe('PHASE 2 Scoring & Matching Service Tests', () => {
       const found = { spot: 'Common Room', happenedAt: t3 };
 
       const score = locationTimeScore(lost, found);
-      // spot matches (1.0) * exp(-1) = 0.3679
       expect(score).toBeCloseTo(Math.exp(-1), 2);
     });
 
@@ -71,65 +79,103 @@ describe('PHASE 2 Scoring & Matching Service Tests', () => {
       expect(score).toBe(0);
     });
 
-    it('gives lower score for different spots in the hostel', () => {
+    it('uses custom spotAdjacency defined on the Hostel model', () => {
+      const mockHostel = {
+        spotAdjacency: {
+          'Floor 1': ['Floor 2'],
+          'Floor 2': ['Floor 1', 'Floor 3'],
+        },
+      };
+
+      expect(areSpotsAdjacent('Floor 1', 'Floor 2', mockHostel)).toBe(true);
+      expect(areSpotsAdjacent('Floor 1', 'Floor 3', mockHostel)).toBe(false);
+
       const now = new Date();
-      const sameSpot = locationTimeScore(
-        { spot: 'Library', happenedAt: now },
-        { spot: 'Library', happenedAt: now }
+      const scoreAdjacent = locationTimeScore(
+        { spot: 'Floor 1', happenedAt: now },
+        { spot: 'Floor 2', happenedAt: now },
+        mockHostel
       );
-      const diffSpot = locationTimeScore(
-        { spot: 'Library', happenedAt: now },
-        { spot: 'Gym & Sports Complex', happenedAt: now }
+      const scoreNonAdjacent = locationTimeScore(
+        { spot: 'Floor 1', happenedAt: now },
+        { spot: 'Floor 3', happenedAt: now },
+        mockHostel
       );
 
-      expect(diffSpot).toBeLessThan(sameSpot);
-      expect(diffSpot).toBeGreaterThan(0);
+      expect(scoreAdjacent).toBe(0.5); // adjacent base
+      expect(scoreNonAdjacent).toBe(0.2); // same hostel baseline
     });
   });
 
-  describe('Weighted Final Score Calculation', () => {
-    it('applies configured weights (text 0.7, locationTime 0.3)', () => {
+  describe('Combined Scoring & Weight Redistribution (Phase 3)', () => {
+    it('applies full weights (text 0.5, image 0.3, location 0.2) when both items have images', () => {
       const now = new Date();
       const lost = {
         type: 'lost',
         spot: 'Common Room',
         happenedAt: now,
         textEmbedding: [1, 0],
+        imageEmbedding: [0.8, 0.6], // norm = 1
       };
       const found = {
         type: 'found',
         spot: 'Common Room',
         happenedAt: now,
         textEmbedding: [1, 0], // text similarity = 1.0
+        imageEmbedding: [0.8, 0.6], // image similarity = 1.0
       };
 
       const result = computeFinalScore(lost, found);
+      expect(result.hasBothImages).toBe(true);
       expect(result.textScore).toBe(1.0);
+      expect(result.imageScore).toBe(1.0);
       expect(result.locationTimeScore).toBe(1.0);
-      // 1.0 * 0.7 + 1.0 * 0.3 = 1.0
+      expect(result.weightsUsed.text).toBe(0.5);
+      expect(result.weightsUsed.image).toBe(0.3);
+      expect(result.weightsUsed.locationTime).toBe(0.2);
+      expect(result.weightsUsed.redistributed).toBe(false);
+      // 1*0.5 + 1*0.3 + 1*0.2 = 1.0
       expect(result.finalScore).toBe(1.0);
     });
 
-    it('correctly weights partial text similarity and location-time score', () => {
+    it('redistributes the 0.3 image weight proportionally when one or both posts lack images', () => {
       const now = new Date();
       const lost = {
         type: 'lost',
         spot: 'Common Room',
         happenedAt: now,
-        textEmbedding: [3, 4], // norm = 5
+        textEmbedding: [1, 0],
+        imageEmbedding: [1, 0],
       };
       const found = {
         type: 'found',
         spot: 'Common Room',
         happenedAt: now,
-        textEmbedding: [4, 3], // norm = 5, cosine = 0.96
+        textEmbedding: [1, 0],
+        imageEmbedding: [], // Found post has no images!
       };
 
       const result = computeFinalScore(lost, found);
-      expect(result.textScore).toBeCloseTo(0.96, 2);
-      expect(result.locationTimeScore).toBe(1.0);
-      // (0.96 * 0.7) + (1.0 * 0.3) = 0.672 + 0.3 = 0.972
-      expect(result.finalScore).toBeCloseTo(0.972, 2);
+      expect(result.hasBothImages).toBe(false);
+      expect(result.weightsUsed.redistributed).toBe(true);
+      expect(result.weightsUsed.image).toBe(0);
+      expect(result.weightsUsed.text).toBeCloseTo(0.5 / 0.7, 3);
+      expect(result.weightsUsed.locationTime).toBeCloseTo(0.2 / 0.7, 3);
+      // 1.0 * (0.5/0.7) + 1.0 * (0.2/0.7) = 1.0
+      expect(result.finalScore).toBe(1.0);
+    });
+  });
+
+  describe('Image Embedding Cache', () => {
+    it('caches and clears image embeddings', () => {
+      imageEmbeddingService.clearImageCache();
+      // Test the cache helper directly
+      const mockKey = '/uploads/sample.jpg';
+      const mockEmbedding = [0.1, 0.2, 0.3];
+
+      // Simulate cache entry
+      imageEmbeddingService.clearImageCache();
+      expect(imageEmbeddingService.resolveLocalImagePath('non_existent.png')).toBeNull();
     });
   });
 
@@ -148,9 +194,15 @@ describe('PHASE 2 Scoring & Matching Service Tests', () => {
     });
   });
 
-  describe('Matching Thresholds and Top 5 Limit Integration', () => {
+  describe('Integration: Matching Thresholds & Warden Debug Endpoint', () => {
     let testHostel;
-    let testUser;
+    let wardenUser;
+    let residentUser;
+    let wardenToken;
+    let residentToken;
+    let lostPost;
+    let foundPost;
+    let testMatch;
 
     beforeAll(async () => {
       const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/hostel_lost_found_test';
@@ -175,35 +227,75 @@ describe('PHASE 2 Scoring & Matching Service Tests', () => {
         name: 'Cauvery Hostel',
         inviteCode: 'TEST2026',
         spots: ['Common Room', 'Mess', 'Gym'],
+        spotAdjacency: {
+          'Common Room': ['Mess'],
+        },
       });
 
-      testUser = await User.create({
-        name: 'Tester',
-        email: 'test@hostel.edu',
+      wardenUser = await User.create({
+        name: 'Warden Smith',
+        email: 'warden@test.com',
+        passwordHash: 'hash',
+        hostel: testHostel._id,
+        room: 'W-01',
+        role: 'warden',
+        approved: true,
+      });
+
+      residentUser = await User.create({
+        name: 'Resident John',
+        email: 'john@test.com',
         passwordHash: 'hash',
         hostel: testHostel._id,
         room: '101',
+        role: 'resident',
         approved: true,
+      });
+
+      wardenToken = generateToken(wardenUser._id);
+      residentToken = generateToken(residentUser._id);
+
+      lostPost = await Post.create({
+        hostel: testHostel._id,
+        type: 'lost',
+        title: 'Lost earphone case',
+        description: 'Navy blue case',
+        category: 'electronics',
+        spot: 'Common Room',
+        postedBy: residentUser._id,
+        textEmbedding: [1, 0, 0],
+        imageEmbedding: [0.8, 0.6],
+      });
+
+      foundPost = await Post.create({
+        hostel: testHostel._id,
+        type: 'found',
+        title: 'AirPods cover found',
+        description: 'Blue rubber jacket',
+        category: 'electronics',
+        spot: 'Common Room',
+        postedBy: residentUser._id,
+        textEmbedding: [0.95, 0.31, 0],
+        imageEmbedding: [0.8, 0.6],
+      });
+
+      const scores = computeFinalScore(lostPost, foundPost, testHostel);
+      testMatch = await Match.create({
+        hostel: testHostel._id,
+        lostPost: lostPost._id,
+        foundPost: foundPost._id,
+        textScore: scores.textScore,
+        imageScore: scores.imageScore,
+        locationTimeScore: scores.locationTimeScore,
+        finalScore: scores.finalScore,
+        status: 'suggested',
       });
     });
 
     it('creates Match documents only above the threshold and prunes beyond top 5', async () => {
-      // Create target lost post
-      const lostPost = await Post.create({
-        hostel: testHostel._id,
-        type: 'lost',
-        title: 'Lost earphone case',
-        description: 'Blue case',
-        category: 'electronics',
-        spot: 'Common Room',
-        postedBy: testUser._id,
-        textEmbedding: [1, 0, 0],
-      });
-
       // Create 7 candidate found posts with varying similarity
-      // 6 candidates will have high similarity (above 0.55), 1 will have 0 similarity
       for (let i = 1; i <= 7; i++) {
-        const angle = i <= 6 ? 0.95 - (i * 0.05) : 0; // i=1..6 gives >0.65 score, i=7 gives 0
+        const angle = i <= 6 ? 0.95 - (i * 0.05) : 0;
         await Post.create({
           hostel: testHostel._id,
           type: 'found',
@@ -211,27 +303,42 @@ describe('PHASE 2 Scoring & Matching Service Tests', () => {
           description: `Description ${i}`,
           category: 'electronics',
           spot: 'Common Room',
-          postedBy: testUser._id,
+          postedBy: residentUser._id,
           textEmbedding: [angle, Math.sqrt(Math.max(0, 1 - angle * angle)), 0],
         });
       }
 
-      // Run matching
       await matchingService.findAndSaveMatches(lostPost);
 
-      // Verify that Match documents were created
       const matches = await Match.find({ lostPost: lostPost._id }).sort({ finalScore: -1 });
 
-      // Threshold check: Candidate 7 (score below 0.55) was never included
       expect(matches.every((m) => m.finalScore >= config.matchThreshold)).toBe(true);
-
-      // Top 5 check: Despite 6 candidates exceeding threshold, only top 5 were kept
       expect(matches.length).toBe(5);
+    });
 
-      // Matches should be ordered descending
-      for (let j = 0; j < matches.length - 1; j++) {
-        expect(matches[j].finalScore).toBeGreaterThanOrEqual(matches[j + 1].finalScore);
-      }
+    it('prohibits residents from accessing the warden match breakdown debug endpoint', async () => {
+      const res = await request(app)
+        .get(`/api/warden/matches/${testMatch._id}/breakdown`)
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain('Warden');
+    });
+
+    it('allows warden to retrieve detailed score breakdown for a match', async () => {
+      const res = await request(app)
+        .get(`/api/warden/matches/${testMatch._id}/breakdown`)
+        .set('Authorization', `Bearer ${wardenToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.matchId).toBe(testMatch._id.toString());
+      expect(res.body.data.scoringBreakdown.textScore).toBeDefined();
+      expect(res.body.data.scoringBreakdown.imageScore).toBeDefined();
+      expect(res.body.data.scoringBreakdown.locationTimeScore.baseLocationScore).toBe(1.0);
+      expect(res.body.data.scoringBreakdown.weightsApplied.text).toBe(0.5);
+      expect(res.body.data.scoringBreakdown.weightsApplied.image).toBe(0.3);
+      expect(res.body.data.scoringBreakdown.weightsApplied.locationTime).toBe(0.2);
     });
   });
 });

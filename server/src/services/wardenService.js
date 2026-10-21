@@ -1,5 +1,8 @@
 const User = require('../models/User');
 const Post = require('../models/Post');
+const Match = require('../models/Match');
+const Hostel = require('../models/Hostel');
+const scoringService = require('./scoringService');
 
 // Get all unapproved resident accounts strictly inside the warden's hostel
 const getPendingUsers = async (hostelId) => {
@@ -48,8 +51,28 @@ const getWardenPosts = async (hostelId, query = {}) => {
   return posts;
 };
 
+// Warden admin debug inspection of a match's algorithmic score breakdown
+const getMatchBreakdown = async (hostelId, matchId) => {
+  const match = await Match.findOne({
+    _id: matchId,
+    hostel: hostelId,
+  })
+    .populate('lostPost')
+    .populate('foundPost');
+
+  if (!match) {
+    const error = new Error('Match not found in your hostel');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const hostel = await Hostel.findById(hostelId);
+  return scoringService.getDetailedScoreBreakdown(match.lostPost, match.foundPost, match, hostel);
+};
+
 module.exports = {
   getPendingUsers,
   approveUser,
   getWardenPosts,
+  getMatchBreakdown,
 };
