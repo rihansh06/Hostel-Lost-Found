@@ -2,22 +2,33 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 import PostCard from '../components/PostCard';
-import { Search, Filter, PlusCircle, RefreshCw, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import {
+  Search,
+  PlusCircle,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  X,
+  SlidersHorizontal,
+  Sparkles,
+  MapPin,
+} from 'lucide-react';
 
 const CATEGORIES = [
-  { value: '', label: 'All Categories' },
-  { value: 'electronics', label: '📱 Electronics' },
-  { value: 'clothing', label: '👕 Clothing' },
-  { value: 'keys', label: '🔑 Keys' },
-  { value: 'bottle', label: '🍶 Bottle' },
-  { value: 'documents', label: '📄 Documents' },
-  { value: 'other', label: '📦 Other' },
+  { value: '', label: 'All Categories', icon: '✨' },
+  { value: 'electronics', label: 'Electronics', icon: '📱' },
+  { value: 'clothing', label: 'Clothing', icon: '👕' },
+  { value: 'keys', label: 'Keys', icon: '🔑' },
+  { value: 'bottle', label: 'Bottle', icon: '🍶' },
+  { value: 'documents', label: 'Documents', icon: '📄' },
+  { value: 'other', label: 'Other', icon: '📦' },
 ];
 
 const STATUSES = [
   { value: '', label: 'All Statuses' },
-  { value: 'open', label: 'Open' },
-  { value: 'matched', label: 'Matched' },
+  { value: 'open', label: 'Active Open' },
+  { value: 'matched', label: 'AI Matched' },
   { value: 'claim_pending', label: 'Claim Pending' },
   { value: 'returned', label: 'Returned' },
 ];
@@ -43,7 +54,7 @@ export default function Feed() {
   useEffect(() => {
     const fetchSpots = async () => {
       try {
-        const res = await api.get('/api/hostel/spots');
+        const res = await api.get('/hostel/spots');
         setSpots(res.data.data || []);
       } catch (err) {
         console.error('Failed to load hostel spots:', err);
@@ -51,6 +62,11 @@ export default function Feed() {
     };
     fetchSpots();
   }, []);
+
+  // Sync search input if URL changes externally
+  useEffect(() => {
+    setSearchInput(q);
+  }, [q]);
 
   // Fetch posts with filters
   const fetchPosts = useCallback(async () => {
@@ -67,7 +83,7 @@ export default function Feed() {
         ...(q && { q }),
       };
 
-      const res = await api.get('/api/posts', { params });
+      const res = await api.get('/posts', { params });
       setPosts(res.data.posts || []);
       setPagination(res.data.pagination || { total: 0, page: 1, limit: 12, totalPages: 1 });
     } catch (err) {
@@ -91,7 +107,6 @@ export default function Feed() {
         nextParams.delete(key);
       }
     });
-    // Always reset to page 1 on filter changes unless page itself is explicitly updated
     if (!('page' in updates)) {
       nextParams.delete('page');
     }
@@ -112,188 +127,238 @@ export default function Feed() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Top Banner / Hero */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Hostel Lost & Found Feed
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Browse reports, search misplaced items, or post a new discovery
-          </p>
-        </div>
+      {/* Hero Welcome Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white p-6 sm:p-8 mb-8 shadow-lg shadow-indigo-950/10">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-8 w-64 h-64 rounded-full bg-violet-500/20 blur-3xl pointer-events-none" />
 
-        <Link
-          to="/posts/new"
-          className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors text-sm shrink-0"
-        >
-          <PlusCircle className="w-4 h-4 mr-2" />
-          Report Lost or Found
-        </Link>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-indigo-200 backdrop-blur-md mb-3 border border-white/10">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+              <span>AI-Powered Campus Match Engine</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+              Hostel Lost & Found Directory
+            </h1>
+            <p className="mt-2 text-indigo-100 text-sm sm:text-base leading-relaxed">
+              Find what you misplaced or report found belongings. Semantic vector matching pairs candidate items automatically.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <Link
+              to="/posts/new"
+              className="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-2xl font-bold text-sm bg-white text-indigo-950 hover:bg-indigo-50 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center"
+            >
+              <PlusCircle className="w-4 h-4 text-indigo-600" />
+              <span>Post New Item</span>
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs mb-8 space-y-4">
-        {/* Search row and Type tabs */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Type Toggle Tabs */}
-          <div className="flex rounded-xl bg-slate-100 p-1 shrink-0">
+      {/* Modern Filter & Search Console */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs mb-8 space-y-4">
+        {/* Row 1: Type Segmented Control & Search Input */}
+        <div className="flex flex-col lg:flex-row gap-3">
+          {/* Type Segmented Pill Toggle */}
+          <div className="flex p-1 bg-slate-100 rounded-xl shrink-0 self-start lg:self-center">
             <button
               onClick={() => updateFilters({ type: '' })}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                !type ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                !type
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               All Items
             </button>
             <button
               onClick={() => updateFilters({ type: 'lost' })}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                type === 'lost' ? 'bg-rose-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                type === 'lost'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              🔍 Lost
+              🔍 Lost Only
             </button>
             <button
               onClick={() => updateFilters({ type: 'found' })}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                type === 'found' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                type === 'found'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              🎁 Found
+              ✨ Found Only
             </button>
           </div>
 
           {/* Search bar */}
           <form onSubmit={handleSearchSubmit} className="flex-1 flex gap-2">
             <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search items by keywords (e.g. AirPods, flask, keys)..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                placeholder="Search by keywords, brand, color (e.g. 'AirPods', 'blue bottle', 'keys')..."
+                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
               />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput('');
+                    updateFilters({ q: '' });
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 transition-colors shrink-0"
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
             >
               Search
             </button>
           </form>
         </div>
 
-        {/* Detailed filters row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100 text-xs">
-          <div>
-            <label className="block font-medium text-slate-600 mb-1">Category</label>
-            <select
-              value={category}
-              onChange={(e) => updateFilters({ category: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-medium text-slate-600 mb-1">Hostel Spot</label>
-            <select
-              value={spot}
-              onChange={(e) => updateFilters({ spot: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">All Spots</option>
-              {spots.map((s) => (
-                <option key={s} value={s}>
-                  📍 {s}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-medium text-slate-600 mb-1">Status</label>
-            <select
-              value={status}
-              onChange={(e) => updateFilters({ status: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {STATUSES.map((st) => (
-                <option key={st.value} value={st.value}>
-                  {st.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Row 2: Category Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar">
+          {CATEGORIES.map((cat) => {
+            const isSelected = category === cat.value;
+            return (
+              <button
+                key={cat.value}
+                onClick={() => updateFilters({ category: cat.value })}
+                className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer border ${
+                  isSelected
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-xs'
+                    : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {activeFiltersCount > 0 && (
-          <div className="flex items-center justify-between text-xs pt-1 text-slate-500">
-            <span>
-              {activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} applied ({pagination.total} results)
-            </span>
-            <button
-              onClick={clearAllFilters}
-              className="text-indigo-600 font-semibold hover:underline"
-            >
-              Reset all filters
-            </button>
+        {/* Row 3: Spot Dropdown & Status Filter */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Spot Selector */}
+            <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={spot}
+                onChange={(e) => updateFilters({ spot: e.target.value })}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                <option value="">All Locations / Spots</option>
+                {spots.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Selector */}
+            <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={status}
+                onChange={(e) => updateFilters({ status: e.target.value })}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                {STATUSES.map((st) => (
+                  <option key={st.value} value={st.value}>
+                    {st.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center space-x-1 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Reset Filters ({activeFiltersCount})</span>
+              </button>
+            )}
           </div>
-        )}
+
+          <div className="text-slate-500 font-semibold text-xs ml-auto">
+            {pagination.total} {pagination.total === 1 ? 'item found' : 'items total'}
+          </div>
+        </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Posts Feed Grid */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-sm font-medium">Loading items...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 animate-pulse"
+            >
+              <div className="h-44 bg-slate-200 rounded-xl w-full" />
+              <div className="h-4 bg-slate-200 rounded w-1/3" />
+              <div className="h-5 bg-slate-200 rounded w-3/4" />
+              <div className="h-3 bg-slate-200 rounded w-full" />
+              <div className="h-3 bg-slate-200 rounded w-2/3" />
+            </div>
+          ))}
         </div>
       ) : error ? (
-        <div className="p-6 text-center bg-rose-50 rounded-2xl border border-rose-200 text-rose-700 max-w-lg mx-auto">
-          <p className="font-semibold">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-xl mx-auto my-12">
+          <p className="text-red-700 font-bold text-sm mb-4">{error}</p>
           <button
             onClick={fetchPosts}
-            className="mt-3 px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-semibold"
+            className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 cursor-pointer"
           >
-            Try Again
+            Retry Loading
           </button>
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-          <Inbox className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-slate-800">No items found</h3>
-          <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center max-w-lg mx-auto my-8 shadow-xs">
+          <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
+            <Inbox className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-extrabold text-slate-900">No matching items found</h3>
+          <p className="text-xs text-slate-500 mt-1.5 mb-6 max-w-sm mx-auto leading-relaxed">
             {activeFiltersCount > 0
-              ? 'No lost or found items matched your current filters. Try relaxing your search criteria.'
-              : 'There are currently no items reported in your hostel. Have you found or lost something?'}
+              ? 'Try widening your filters or clearing search keywords to see more items.'
+              : 'Be the first resident to post a report in your hostel.'}
           </p>
           {activeFiltersCount > 0 ? (
             <button
               onClick={clearAllFilters}
-              className="mt-4 px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
             >
-              Clear Filters
+              Clear All Filters
             </button>
           ) : (
             <Link
               to="/posts/new"
-              className="mt-4 inline-flex items-center px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors inline-block"
             >
-              <PlusCircle className="w-4 h-4 mr-1.5" />
-              Post an Item
+              Report an Item
             </Link>
           )}
         </div>
       ) : (
         <>
-          {/* Post Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {posts.map((post) => (
               <PostCard key={post._id} post={post} />
@@ -302,28 +367,27 @@ export default function Feed() {
 
           {/* Pagination Controls */}
           {pagination.totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-between border-t border-slate-200 pt-6">
+            <div className="mt-12 flex items-center justify-center space-x-2">
               <button
-                disabled={page <= 1}
-                onClick={() => updateFilters({ page: page - 1 })}
-                className="inline-flex items-center px-3.5 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={pagination.page <= 1}
+                onClick={() => updateFilters({ page: pagination.page - 1 })}
+                className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
               >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Previous
+                <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <span className="text-sm text-slate-600">
-                Page <span className="font-semibold text-slate-900">{page}</span> of{' '}
-                <span className="font-semibold text-slate-900">{pagination.totalPages}</span>
-              </span>
+              <div className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-xs">
+                Page {pagination.page} of {pagination.totalPages}
+              </div>
 
               <button
-                disabled={page >= pagination.totalPages}
-                onClick={() => updateFilters({ page: page + 1 })}
-                className="inline-flex items-center px-3.5 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => updateFilters({ page: pagination.page + 1 })}
+                className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
               >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}

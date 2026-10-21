@@ -350,6 +350,26 @@ export default function PostDetail() {
             </div>
           </div>
 
+          {/* Returned & Handover Success Banner */}
+          {post.status === 'returned' && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-start space-x-3.5 shadow-xs">
+              <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700 shrink-0">
+                <CheckCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-emerald-950">Item Recovered & Returned</h3>
+                <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
+                  This item has been successfully verified and returned to its rightful owner.
+                  {claimsData?.claims?.some((c) => c.status === 'approved') && (
+                    <span className="block mt-1 font-semibold text-emerald-900">
+                      Handover completed via verified challenge handshake.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Title and metadata */}
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
