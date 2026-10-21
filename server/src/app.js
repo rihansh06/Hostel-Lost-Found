@@ -14,18 +14,24 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Security headers with crossOriginResourcePolicy configured for serving uploaded images
+// 1. Configure CORS options
+const corsOptions = {
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+
+// 2. Place CORS BEFORE Helmet to ensure OPTIONS preflight requests are handled immediately
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// 3. Relax Helmet policies so cross-origin requests from Vercel are not blocked
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
-
-// Cross-origin resource sharing
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true,
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
   })
 );
 
