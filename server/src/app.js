@@ -24,7 +24,10 @@ const allowedOrigins = [
 // 2. Safely handle origin validation
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser requests (Postman, curl, server-to-server)
+    // Log incoming requests on Render to pinpoint origin mismatches
+    console.log('Incoming Request Origin:', origin);
+    console.log('Allowed Origins Array:', allowedOrigins);
+
     if (!origin) return callback(null, true);
 
     const cleanOrigin = origin.replace(/\/$/, '');
@@ -35,7 +38,7 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      // Pass false instead of an Error object to avoid returning 500
+      console.error(`CORS BLOCKED: Origin ${origin} is not in allowedOrigins`);
       callback(null, false);
     }
   },
