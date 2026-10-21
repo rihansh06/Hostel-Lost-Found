@@ -21,10 +21,10 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
-// 2. Dynamic CORS options callback
+// 2. Safely handle origin validation
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow server-to-server or non-browser requests (Postman, curl)
+    // Allow non-browser requests (Postman, curl, server-to-server)
     if (!origin) return callback(null, true);
 
     const cleanOrigin = origin.replace(/\/$/, '');
@@ -35,7 +35,8 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error(`CORS Policy Error: Origin ${origin} not allowed`));
+      // Pass false instead of an Error object to avoid returning 500
+      callback(null, false);
     }
   },
   credentials: true,
@@ -43,10 +44,10 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 };
 
-// 3. Handle preflight OPTIONS requests for ALL routes BEFORE any middleware
+// 3. Apply CORS middleware before Helmet
 app.use(cors(corsOptions));
 
-// 4. Relax Helmet cross-origin restrictions
+// 4. Relax Helmet cross-origin policies
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
