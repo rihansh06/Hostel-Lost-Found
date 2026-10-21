@@ -7,6 +7,8 @@ const authRoutes = require('./routes/authRoutes');
 const wardenRoutes = require('./routes/wardenRoutes');
 const postRoutes = require('./routes/postRoutes');
 const hostelRoutes = require('./routes/hostelRoutes');
+const claimRoutes = require('./routes/claimRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -43,6 +45,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/warden', wardenRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/hostel', hostelRoutes);
+app.use('/api/claims', claimRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Central error handling middleware
 app.use(errorHandler);

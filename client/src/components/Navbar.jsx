@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { PlusCircle, Search, ShieldCheck, LogOut, Menu, X, Home } from 'lucide-react';
+import NotificationDropdown from './NotificationDropdown';
+import { PlusCircle, Search, ShieldCheck, LogOut, Menu, X, CheckSquare } from 'lucide-react';
 
 export default function Navbar() {
   const { user, isWarden, logout, isAuthenticated } = useAuth();
@@ -33,7 +34,7 @@ export default function Navbar() {
           </div>
 
           {isAuthenticated ? (
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-3">
               <Link
                 to="/"
                 className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -56,6 +57,18 @@ export default function Navbar() {
                 <span>Post Item</span>
               </Link>
 
+              <Link
+                to="/claims"
+                className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/claims')
+                    ? 'text-indigo-600 bg-indigo-50'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <CheckSquare className="w-4 h-4" />
+                <span>My Claims</span>
+              </Link>
+
               {isWarden && (
                 <Link
                   to="/warden"
@@ -69,6 +82,9 @@ export default function Navbar() {
                   <span>Warden Panel</span>
                 </Link>
               )}
+
+              {/* Real-time Notifications Bell */}
+              <NotificationDropdown />
 
               <div className="h-6 w-px bg-slate-200 mx-1" />
 
@@ -107,7 +123,8 @@ export default function Navbar() {
           )}
 
           {/* Mobile hamburger button */}
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center space-x-2 md:hidden">
+            {isAuthenticated && <NotificationDropdown />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -142,6 +159,13 @@ export default function Navbar() {
                 className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
               >
                 Post Item
+              </Link>
+              <Link
+                to="/claims"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
+              >
+                My Claims
               </Link>
               {isWarden && (
                 <Link

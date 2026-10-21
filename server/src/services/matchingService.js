@@ -6,6 +6,7 @@ const config = require('../config/scoring');
 const embeddingService = require('./embeddingService');
 const imageEmbeddingService = require('./imageEmbeddingService');
 const scoringService = require('./scoringService');
+const notificationService = require('./notificationService');
 
 // In-memory retry queue for posts whose embeddings failed on creation
 let retryQueue = [];
@@ -173,6 +174,30 @@ const findAndSaveMatches = async (post) => {
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
+
+      // Real-time notification for strong matches (finalScore >= HIGH_THRESHOLD)
+      if (scores.finalScore >= config.highThreshold && !matchDoc.notifiedAt) {
+        matchDoc.notifiedAt = new Date();
+        await matchDoc.save();
+
+        if (lostPost.postedBy) {
+          notificationService.createAndEmitNotification({
+            userId: lostPost.postedBy,
+            type: 'strong_match',
+            message: `High confidence match (${Math.round(scores.finalScore * 100)}%) found for your item: "${lostPost.title}"`,
+            link: `/posts/${lostPost._id}`,
+          });
+        }
+        if (foundPost.postedBy) {
+          notificationService.createAndEmitNotification({
+            userId: foundPost.postedBy,
+            type: 'strong_match',
+            message: `High confidence match (${Math.round(scores.finalScore * 100)}%) found for your item: "${foundPost.title}"`,
+            link: `/posts/${foundPost._id}`,
+          });
+        }
+      }
+
       createdMatches.push(matchDoc);
     }
   }

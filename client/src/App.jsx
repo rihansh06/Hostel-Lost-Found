@@ -9,6 +9,7 @@ import Feed from './pages/Feed';
 import CreatePost from './pages/CreatePost';
 import PostDetail from './pages/PostDetail';
 import WardenDashboard from './pages/WardenDashboard';
+import MyClaims from './pages/MyClaims';
 
 export default function App() {
   return (
@@ -44,6 +45,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <PostDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/claims"
+                element={
+                  <ProtectedRoute>
+                    <MyClaims />
                   </ProtectedRoute>
                 }
               />
