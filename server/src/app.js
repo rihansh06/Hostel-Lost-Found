@@ -14,25 +14,31 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// 1. Explicitly list all allowed origins without trailing slashes
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  process.env.CLIENT_URL,
-].filter(Boolean);
+// Configure CORS to dynamically accept requests from Vercel and local development
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g., mobile apps, cURL, Postman)
+      if (!origin) return callback(null, true);
 
-// 2. Pass origin array directly to CORS options
-const corsOptions = {
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-};
+      // Check if origin ends with .vercel.app or matches localhost/CLIENT_URL
+      const isVercel = origin.endsWith('.vercel.app');
+      const isLocalhost = origin.includes('localhost');
+      const isClientUrl = process.env.CLIENT_URL && origin.replace(/\/$/, '') === process.env.CLIENT_URL.replace(/\/$/, '');
 
-// 3. Apply CORS before all routes and handlers
-app.use(cors(corsOptions));
+      if (isVercel || isLocalhost || isClientUrl) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  })
+);
 
-// 4. Relax Helmet cross-origin restrictions
+// Security headers relaxed for cross-origin assets
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
