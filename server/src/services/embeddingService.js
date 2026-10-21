@@ -1,6 +1,17 @@
 let pipelineInstance = null;
 let loadingPromise = null;
 
+// Dynamic import helper that works cleanly across both standard Node runtime and Jest VM
+const importTransformers = async () => {
+  try {
+    const dynamicImport = new Function('specifier', 'return import(specifier)');
+    return await dynamicImport('@huggingface/transformers');
+  } catch (err) {
+    // Fallback direct import
+    return await import('@huggingface/transformers');
+  }
+};
+
 // Lazy-load the HuggingFace transformers pipeline on first use or at startup
 const getPipeline = async () => {
   if (pipelineInstance) {
@@ -13,7 +24,7 @@ const getPipeline = async () => {
 
   loadingPromise = (async () => {
     try {
-      const { pipeline } = await import('@huggingface/transformers');
+      const { pipeline } = await importTransformers();
       console.log('Loading Xenova/all-MiniLM-L6-v2 model for text embeddings...');
       pipelineInstance = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
         quantized: true,

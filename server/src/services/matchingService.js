@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Post = require('../models/Post');
 const Match = require('../models/Match');
 const config = require('../config/scoring');
@@ -5,13 +6,19 @@ const embeddingService = require('./embeddingService');
 const scoringService = require('./scoringService');
 
 // In-memory retry queue for posts whose embeddings failed on creation
-const retryQueue = [];
+let retryQueue = [];
 let isProcessingQueue = false;
+let queueTimeoutId = null;
 
 /**
  * Enqueue a post for background embedding retry
  */
 const enqueueRetry = (postId, attempt = 1) => {
+  if (process.env.NODE_ENV === 'test') {
+    // In test environment, skip background setTimeout retries
+    return;
+  }
+
   if (attempt > 5) {
     console.warn(`[MatchingService] Max retry attempts exceeded for post ${postId}`);
     return;
@@ -25,8 +32,15 @@ const enqueueRetry = (postId, attempt = 1) => {
 };
 
 const scheduleQueueProcessor = () => {
+  if (process.env.NODE_ENV === 'test') return;
+
   isProcessingQueue = true;
-  setTimeout(async () => {
+  queueTimeoutId = setTimeout(async () => {
+    if (mongoose.connection.readyState !== 1) {
+      isProcessingQueue = false;
+      return;
+    }
+
     const now = Date.now();
     const readyItems = retryQueue.filter((item) => item.nextRetryAt <= now);
 
@@ -48,12 +62,27 @@ const scheduleQueueProcessor = () => {
       isProcessingQueue = false;
     }
   }, 3000);
+
+  if (queueTimeoutId && typeof queueTimeoutId.unref === 'function') {
+    queueTimeoutId.unref();
+  }
+};
+
+const clearRetryQueue = () => {
+  retryQueue = [];
+  isProcessingQueue = false;
+  if (queueTimeoutId) {
+    clearTimeout(queueTimeoutId);
+    queueTimeoutId = null;
+  }
 };
 
 /**
  * Computes embedding and updates Match documents for a given post
  */
 const processPostEmbeddingAndMatching = async (postId) => {
+  if (mongoose.connection.readyState !== 1) return;
+
   const post = await Post.findById(postId);
   if (!post) return;
 
@@ -225,4 +254,5 @@ module.exports = {
   getMatchesForPost,
   getMatchReason,
   enqueueRetry,
+  clearRetryQueue,
 };
