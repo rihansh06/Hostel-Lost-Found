@@ -9,6 +9,7 @@ const postRoutes = require('./routes/postRoutes');
 const hostelRoutes = require('./routes/hostelRoutes');
 const claimRoutes = require('./routes/claimRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/hostel', hostelRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Central error handling middleware
 app.use(errorHandler);

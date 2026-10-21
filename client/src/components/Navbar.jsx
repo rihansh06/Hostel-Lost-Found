@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationDropdown from './NotificationDropdown';
-import { PlusCircle, Search, ShieldCheck, LogOut, Menu, X, CheckSquare } from 'lucide-react';
+import { PlusCircle, Search, ShieldCheck, LogOut, Menu, X, CheckSquare, BarChart3 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, isWarden, logout, isAuthenticated } = useAuth();
@@ -70,17 +70,31 @@ export default function Navbar() {
               </Link>
 
               {isWarden && (
-                <Link
-                  to="/warden"
-                  className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive('/warden')
-                      ? 'text-purple-600 bg-purple-50'
-                      : 'text-slate-600 hover:text-purple-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <ShieldCheck className="w-4 h-4 text-purple-600" />
-                  <span>Warden Panel</span>
-                </Link>
+                <>
+                  <Link
+                    to="/warden"
+                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/warden')
+                        ? 'text-purple-600 bg-purple-50'
+                        : 'text-slate-600 hover:text-purple-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4 text-purple-600" />
+                    <span>Warden Panel</span>
+                  </Link>
+
+                  <Link
+                    to="/stats"
+                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/stats')
+                        ? 'text-indigo-600 bg-indigo-50'
+                        : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4 text-indigo-600" />
+                    <span>Stats</span>
+                  </Link>
+                </>
               )}
 
               {/* Real-time Notifications Bell */}
@@ -168,13 +182,22 @@ export default function Navbar() {
                 My Claims
               </Link>
               {isWarden && (
-                <Link
-                  to="/warden"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-purple-700 hover:bg-purple-50"
-                >
-                  Warden Panel
-                </Link>
+                <>
+                  <Link
+                    to="/warden"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-purple-700 hover:bg-purple-50"
+                  >
+                    Warden Panel
+                  </Link>
+                  <Link
+                    to="/stats"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-indigo-700 hover:bg-indigo-50"
+                  >
+                    Hostel Stats
+                  </Link>
+                </>
               )}
               <button
                 onClick={() => {

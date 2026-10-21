@@ -10,6 +10,7 @@ import CreatePost from './pages/CreatePost';
 import PostDetail from './pages/PostDetail';
 import WardenDashboard from './pages/WardenDashboard';
 import MyClaims from './pages/MyClaims';
+import Stats from './pages/Stats';
 
 export default function App() {
   return (
@@ -63,6 +64,14 @@ export default function App() {
                 element={
                   <WardenRoute>
                     <WardenDashboard />
+                  </WardenRoute>
+                }
+              />
+              <Route
+                path="/stats"
+                element={
+                  <WardenRoute>
+                    <Stats />
                   </WardenRoute>
                 }
               />

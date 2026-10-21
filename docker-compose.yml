@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: hostel-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: hostel_lost_found
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - hostel-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: hostel-server
+    restart: always
+    depends_on:
+      - mongo
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/hostel_lost_found
+      - JWT_SECRET=hostel_lost_found_jwt_super_secret_docker_key_2026!
+      - JWT_EXPIRES_IN=7d
+      - CLIENT_URL=http://localhost:3000
+      - MATCH_THRESHOLD=0.55
+      - HIGH_THRESHOLD=0.70
+      - HF_HOME=/tmp/transformers_cache
+    volumes:
+      - server_uploads:/app/uploads
+    networks:
+      - hostel-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=/api
+        - VITE_SOCKET_URL=/
+    container_name: hostel-client
+    restart: always
+    depends_on:
+      - server
+    ports:
+      - "3000:80"
+    networks:
+      - hostel-network
+
+volumes:
+  mongo_data:
+  server_uploads:
+
+networks:
+  hostel-network:
+    driver: bridge
