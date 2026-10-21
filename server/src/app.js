@@ -14,19 +14,39 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// 1. Configure CORS options
+// 1. Build an array of allowed origins
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
+// 2. Dynamic CORS options callback
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow server-to-server or non-browser requests (Postman, curl)
+    if (!origin) return callback(null, true);
+
+    const cleanOrigin = origin.replace(/\/$/, '');
+    const isAllowed = allowedOrigins.some(
+      (allowed) => allowed && allowed.replace(/\/$/, '') === cleanOrigin
+    );
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS Policy Error: Origin ${origin} not allowed`));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 };
 
-// 2. Place CORS BEFORE Helmet to ensure OPTIONS preflight requests are handled immediately
+// 3. Handle preflight OPTIONS requests for ALL routes BEFORE any middleware
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
-// 3. Relax Helmet policies so cross-origin requests from Vercel are not blocked
+// 4. Relax Helmet cross-origin restrictions
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
