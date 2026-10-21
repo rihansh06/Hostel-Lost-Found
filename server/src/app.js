@@ -14,43 +14,25 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// 1. Build an array of allowed origins
+// 1. Explicitly list all allowed origins without trailing slashes
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
-// 2. Safely handle origin validation
+// 2. Pass origin array directly to CORS options
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Log incoming requests on Render to pinpoint origin mismatches
-    console.log('Incoming Request Origin:', origin);
-    console.log('Allowed Origins Array:', allowedOrigins);
-
-    if (!origin) return callback(null, true);
-
-    const cleanOrigin = origin.replace(/\/$/, '');
-    const isAllowed = allowedOrigins.some(
-      (allowed) => allowed && allowed.replace(/\/$/, '') === cleanOrigin
-    );
-
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.error(`CORS BLOCKED: Origin ${origin} is not in allowedOrigins`);
-      callback(null, false);
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 };
 
-// 3. Apply CORS middleware before Helmet
+// 3. Apply CORS before all routes and handlers
 app.use(cors(corsOptions));
 
-// 4. Relax Helmet cross-origin policies
+// 4. Relax Helmet cross-origin restrictions
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
