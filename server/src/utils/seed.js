@@ -8,6 +8,8 @@ const Post = require('../models/Post');
 const Match = require('../models/Match');
 const Claim = require('../models/Claim');
 const Notification = require('../models/Notification');
+const embeddingService = require('../services/embeddingService');
+const matchingService = require('../services/matchingService');
 
 const seedData = async () => {
   try {
@@ -373,15 +375,37 @@ const seedData = async () => {
       },
     ];
 
-    await Post.insertMany(postsData);
-    console.log(`Created ${postsData.length} sample posts with contrasting vocabulary!`);
+    const createdPosts = await Post.insertMany(postsData);
+    console.log(`Created ${createdPosts.length} sample posts with contrasting vocabulary!`);
+
+    console.log('\nGenerating text embeddings and computing initial matches for sample posts...');
+    for (let i = 0; i < createdPosts.length; i++) {
+      const p = createdPosts[i];
+      try {
+        const embedding = await embeddingService.getPostTextEmbedding(p);
+        p.textEmbedding = embedding;
+        await p.save();
+      } catch (err) {
+        console.warn(`Failed to embed post #${i + 1}:`, err.message);
+      }
+    }
+
+    // Now run pairwise matching for all posts
+    let totalMatchesCreated = 0;
+    for (const p of createdPosts) {
+      const matches = await matchingService.findAndSaveMatches(p);
+      totalMatchesCreated += matches.length;
+    }
+    const distinctMatches = await Match.countDocuments();
+    console.log(`Generated ${distinctMatches} distinct candidate matches across the sample posts!`);
 
     console.log('\n--- SEED SUMMARY ---');
     console.log(`Hostel: ${hostel.name} (Code: ${hostel.inviteCode})`);
     console.log('Warden login: warden@hostel.edu / Password123!');
     console.log('Resident login: aarav@student.edu / Password123!');
     console.log('Pending Resident (to test approve): kunal@student.edu / Password123!');
-    console.log(`Total sample posts: ${postsData.length}`);
+    console.log(`Total sample posts: ${createdPosts.length}`);
+    console.log(`Total active matches generated: ${distinctMatches}`);
 
     await mongoose.disconnect();
     console.log('Database disconnected cleanly.');

@@ -21,6 +21,7 @@ router.get(
 );
 
 router.get('/:id', postController.getPostById);
+router.get('/:id/matches', postController.getPostMatches);
 router.patch('/:id/returned', postController.markReturned);
 router.delete('/:id', postController.deletePost);
 

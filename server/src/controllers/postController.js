@@ -74,6 +74,18 @@ const getSpots = async (req, res, next) => {
   }
 };
 
+const getPostMatches = async (req, res, next) => {
+  try {
+    const matches = await postService.getPostMatches(req.params.id, req.user);
+    res.status(200).json({
+      success: true,
+      data: matches,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createPost,
   getPosts,
@@ -81,4 +93,5 @@ module.exports = {
   markReturned,
   deletePost,
   getSpots,
+  getPostMatches,
 };

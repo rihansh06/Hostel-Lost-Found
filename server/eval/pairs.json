@@ -1,0 +1,432 @@
+[
+  {
+    "id": 1,
+    "category": "electronics",
+    "spot": "Common Room",
+    "lost": {
+      "title": "Lost blue earphone case",
+      "category": "electronics",
+      "description": "Navy blue silicone case for Apple AirPods Pro with small silver carabiner clip."
+    },
+    "found": {
+      "title": "AirPods cover found",
+      "category": "electronics",
+      "description": "Small royal blue rubber protective jacket for wireless earbuds."
+    }
+  },
+  {
+    "id": 2,
+    "category": "bottle",
+    "spot": "Gym & Sports Complex",
+    "lost": {
+      "title": "Black steel bottle missing",
+      "category": "bottle",
+      "description": "Matte black stainless steel insulated Milton flask bottle with a silver cap."
+    },
+    "found": {
+      "title": "Found a dark flask",
+      "category": "bottle",
+      "description": "Metallic dark water container with small dent near the bottom rim."
+    }
+  },
+  {
+    "id": 3,
+    "category": "keys",
+    "spot": "1st Floor Corridor",
+    "lost": {
+      "title": "Misplaced room key with red tag",
+      "category": "keys",
+      "description": "Single brass Godrej door key attached to a bright red plastic keychain marked with number 102."
+    },
+    "found": {
+      "title": "Key found with crimson tag",
+      "category": "keys",
+      "description": "Metallic door latch key with a worn red plastic tab on a metal ring."
+    }
+  },
+  {
+    "id": 4,
+    "category": "clothing",
+    "spot": "Laundry Room",
+    "lost": {
+      "title": "Grey hooded sweatshirt",
+      "category": "clothing",
+      "description": "Oversized charcoal grey hoodie from H&M with front kangaroo pocket left on the dryer."
+    },
+    "found": {
+      "title": "Dark grey pullover left behind",
+      "category": "clothing",
+      "description": "Warm fleece winter hoodie jacket, dark ash colour, retrieved from washing area."
+    }
+  },
+  {
+    "id": 5,
+    "category": "documents",
+    "spot": "Library / Study Area",
+    "lost": {
+      "title": "College ID card lost",
+      "category": "documents",
+      "description": "Student identity smart card with barcode, name Aarav, department of Computer Science."
+    },
+    "found": {
+      "title": "Campus card discovered",
+      "category": "documents",
+      "description": "Laminated institute card found on the desk near computer section."
+    }
+  },
+  {
+    "id": 6,
+    "category": "electronics",
+    "spot": "Library / Study Area",
+    "lost": {
+      "title": "Scientific calculator",
+      "category": "electronics",
+      "description": "Casio fx-991EX ClassWiz calculator in black, with matrix and equation solver functions."
+    },
+    "found": {
+      "title": "Exam math calculator",
+      "category": "electronics",
+      "description": "Casio advanced engineering calculation device with slide-on plastic lid."
+    }
+  },
+  {
+    "id": 7,
+    "category": "other",
+    "spot": "Mess / Dining Hall",
+    "lost": {
+      "title": "Spectacles in brown leather case",
+      "category": "other",
+      "description": "Rectangular Ray-Ban reading glasses inside a foldable brown faux-leather magnetic case."
+    },
+    "found": {
+      "title": "Eyeglasses found on lunch table",
+      "category": "other",
+      "description": "Pair of wireframe specs inside an amber/tan folding box case."
+    }
+  },
+  {
+    "id": 8,
+    "category": "other",
+    "spot": "Common Room",
+    "lost": {
+      "title": "Umbrella left at entrance",
+      "category": "other",
+      "description": "Black automatic three-fold rain umbrella with curved wooden handle."
+    },
+    "found": {
+      "title": "Dark compact brolly",
+      "category": "other",
+      "description": "Collapsible rain shelter stick with wooden grip and push button."
+    }
+  },
+  {
+    "id": 9,
+    "category": "electronics",
+    "spot": "Common Room",
+    "lost": {
+      "title": "Logitech wireless mouse",
+      "category": "electronics",
+      "description": "Ergonomic black bluetooth pointer mouse with silent click buttons."
+    },
+    "found": {
+      "title": "Computer mouse found",
+      "category": "electronics",
+      "description": "Dark optical cordless mouse, battery door on underside."
+    }
+  },
+  {
+    "id": 10,
+    "category": "clothing",
+    "spot": "Gym & Sports Complex",
+    "lost": {
+      "title": "Sports shoes bag",
+      "category": "clothing",
+      "description": "Navy blue drawstring gym sack with Nike swoosh containing running trainers."
+    },
+    "found": {
+      "title": "Athletic kit pouch found",
+      "category": "clothing",
+      "description": "Dark blue cinch drawstring pack with footwear inside."
+    }
+  },
+  {
+    "id": 11,
+    "category": "electronics",
+    "spot": "Common Room",
+    "lost": { "title": "White phone charger plug", "category": "electronics", "description": "Apple 20W USB-C fast charging adapter block." },
+    "found": { "title": "Type-C power brick found", "category": "electronics", "description": "Glossy white rapid phone wall plug with USB-C port." }
+  },
+  {
+    "id": 12,
+    "category": "documents",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Black leather wallet", "category": "documents", "description": "Bi-fold dark leather pocket purse containing driver license and metro card." },
+    "found": { "title": "Found folding billfold", "category": "documents", "description": "Men's charcoal leather cardholder found beneath library bench." }
+  },
+  {
+    "id": 13,
+    "category": "other",
+    "spot": "Mess / Dining Hall",
+    "lost": { "title": "Insulated lunch box bag", "category": "other", "description": "Red thermal tiffin tote bag with zipper and carry handles." },
+    "found": { "title": "Meal carry pouch", "category": "other", "description": "Crimson foil-lined food warmer bag left on dining table." }
+  },
+  {
+    "id": 14,
+    "category": "clothing",
+    "spot": "Gym & Sports Complex",
+    "lost": { "title": "Black wrist watch", "category": "clothing", "description": "Casio digital sport wristwatch with resin strap and stopwatch timer." },
+    "found": { "title": "Digital timekeeper found", "category": "clothing", "description": "Water-resistant athletic digital timepiece with synthetic band." }
+  },
+  {
+    "id": 15,
+    "category": "electronics",
+    "spot": "1st Floor Corridor",
+    "lost": { "title": "Power bank portable battery", "category": "electronics", "description": "10000mAh Anker external battery charger with dual output ports." },
+    "found": { "title": "Mobile backup power pack", "category": "electronics", "description": "Compact black rectangular power accumulator pack." }
+  },
+  {
+    "id": 16,
+    "category": "bottle",
+    "spot": "Common Room",
+    "lost": { "title": "Blue protein shaker", "category": "bottle", "description": "Cyan BlenderBottle with wire whisk mixing ball inside." },
+    "found": { "title": "Gym drink mixer tumbler", "category": "bottle", "description": "Sky blue supplement blending mug with screw cap." }
+  },
+  {
+    "id": 17,
+    "category": "documents",
+    "spot": "1st Floor Corridor",
+    "lost": { "title": "Spiral notebook with physics notes", "category": "documents", "description": "A4 wirebound notepad with graph paper and thermodynamics formulas." },
+    "found": { "title": "Class exercise binder book", "category": "documents", "description": "Coiled study register containing science diagram sketches." }
+  },
+  {
+    "id": 18,
+    "category": "clothing",
+    "spot": "Laundry Room",
+    "lost": { "title": "Blue denim jacket", "category": "clothing", "description": "Levi's trucker jacket with button cuffs and chest flap pockets." },
+    "found": { "title": "Jean coat left on table", "category": "clothing", "description": "Classic wash indigo cotton jacket with metal shank buttons." }
+  },
+  {
+    "id": 19,
+    "category": "keys",
+    "spot": "Common Room",
+    "lost": { "title": "Bike key with iron emblem", "category": "keys", "description": "Royal Enfield motorcycle ignition key on leather strap." },
+    "found": { "title": "Two-wheeler key found", "category": "keys", "description": "Motorbike ignition key attached to embossed dark band." }
+  },
+  {
+    "id": 20,
+    "category": "electronics",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Silver USB thumb drive", "category": "electronics", "description": "64GB SanDisk metal flash memory stick on a keychain ring." },
+    "found": { "title": "Metallic data stick", "category": "electronics", "description": "Small aluminum storage thumb key found plugged into lab terminal." }
+  },
+  {
+    "id": 21,
+    "category": "other",
+    "spot": "Common Room",
+    "lost": { "title": "Wired earphones", "category": "electronics", "description": "White 3.5mm stereo earbuds with in-line microphone." },
+    "found": { "title": "Audio cord earphones", "category": "electronics", "description": "Tangled white aux sound in-ear headphones." }
+  },
+  {
+    "id": 22,
+    "category": "other",
+    "spot": "Mess / Dining Hall",
+    "lost": { "title": "Baseball cap", "category": "clothing", "description": "Dark green cotton visor cap with NY embroidered logo." },
+    "found": { "title": "Sun brim hat", "category": "clothing", "description": "Olive peak cap with stitch emblem." }
+  },
+  {
+    "id": 23,
+    "category": "documents",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Pocket textbook", "category": "documents", "description": "Introduction to Algorithms paperback handbook." },
+    "found": { "title": "Coding course manual", "category": "documents", "description": "Thick computer science textbook with white spine." }
+  },
+  {
+    "id": 24,
+    "category": "other",
+    "spot": "Gym & Sports Complex",
+    "lost": { "title": "Skipping jump rope", "category": "other", "description": "Speed cable jump rope with foam grip handles." },
+    "found": { "title": "Fitness training rope", "category": "other", "description": "Exercise cord with black padded handles." }
+  },
+  {
+    "id": 25,
+    "category": "bottle",
+    "spot": "Mess / Dining Hall",
+    "lost": { "title": "Ceramic coffee mug", "category": "bottle", "description": "White stoneware cup with handle and blue rim." },
+    "found": { "title": "Tea beverage mug", "category": "bottle", "description": "Glazed porcelain drinking cup left by coffee dispenser." }
+  },
+  {
+    "id": 26,
+    "category": "keys",
+    "spot": "Mess / Dining Hall",
+    "lost": { "title": "Padlock key", "category": "keys", "description": "Small brass locker latch key with number 14 stamped." },
+    "found": { "title": "Mini lock key", "category": "keys", "description": "Tiny golden key found near condiment counter." }
+  },
+  {
+    "id": 27,
+    "category": "clothing",
+    "spot": "Common Room",
+    "lost": { "title": "Woolen muffler scarf", "category": "clothing", "description": "Checked red and black neck warmer scarf." },
+    "found": { "title": "Plaid neck wrap", "category": "clothing", "description": "Winter wool woven scarf in crimson checks." }
+  },
+  {
+    "id": 28,
+    "category": "electronics",
+    "spot": "1st Floor Corridor",
+    "lost": { "title": "Laptop power adapter", "category": "electronics", "description": "Dell 65W barrel pin charging cord with power cable." },
+    "found": { "title": "Notebook computer charger", "category": "electronics", "description": "Black AC power converter with round DC tip." }
+  },
+  {
+    "id": 29,
+    "category": "documents",
+    "spot": "Common Room",
+    "lost": { "title": "Hostel mess coupon book", "category": "documents", "description": "Stapled booklet of yellow meal pass slips." },
+    "found": { "title": "Food token slips booklet", "category": "documents", "description": "Yellow dining voucher book with stamp." }
+  },
+  {
+    "id": 30,
+    "category": "other",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Stationery pencil case", "category": "other", "description": "Transparent plastic pouch with blue gel pens and highlighters." },
+    "found": { "title": "Clear pen organizer", "category": "other", "description": "See-through zip pouch containing writing pens." }
+  },
+  {
+    "id": 31,
+    "category": "clothing",
+    "spot": "Gym & Sports Complex",
+    "lost": { "title": "Sweat wristband", "category": "clothing", "description": "Elastic white terrycloth wrist sweatband." },
+    "found": { "title": "Sport cloth band", "category": "clothing", "description": "Absorbent white athletic wrist cuff." }
+  },
+  {
+    "id": 32,
+    "category": "electronics",
+    "spot": "Common Room",
+    "lost": { "title": "HDMI display cable", "category": "electronics", "description": "Braided black 2-meter monitor video cable with gold connectors." },
+    "found": { "title": "Screen video cord", "category": "electronics", "description": "Heavy duty display hookup wire with gold plugs." }
+  },
+  {
+    "id": 33,
+    "category": "other",
+    "spot": "Laundry Room",
+    "lost": { "title": "Laundry detergent basket", "category": "other", "description": "Blue mesh collapsible washing basket with handles." },
+    "found": { "title": "Clothes hamper basket", "category": "other", "description": "Foldable mesh carrier for garments." }
+  },
+  {
+    "id": 34,
+    "category": "keys",
+    "spot": "Gym & Sports Complex",
+    "lost": { "title": "Gym locker combination lock", "category": "keys", "description": "Dial 4-digit master padlock in silver chrome." },
+    "found": { "title": "Code tumbler padlock", "category": "keys", "description": "Metallic number rotary security latch." }
+  },
+  {
+    "id": 35,
+    "category": "bottle",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Glass water bottle", "category": "bottle", "description": "Clear borosilicate water tumbler with bamboo lid." },
+    "found": { "title": "Glass beverage flask", "category": "bottle", "description": "Transparent drink container with wooden screw top." }
+  },
+  {
+    "id": 36,
+    "category": "documents",
+    "spot": "1st Floor Corridor",
+    "lost": { "title": "Laboratory record file", "category": "documents", "description": "Hardbound blue chemistry observation folder with index." },
+    "found": { "title": "Practical assessment binder", "category": "documents", "description": "Blue science report book found on sill." }
+  },
+  {
+    "id": 37,
+    "category": "clothing",
+    "spot": "1st Floor Corridor",
+    "lost": { "title": "Room slippers", "category": "clothing", "description": "Navy blue rubber flip-flops size 8." },
+    "found": { "title": "Indoor sandals", "category": "clothing", "description": "Dark blue lightweight foam thong footwear." }
+  },
+  {
+    "id": 38,
+    "category": "other",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Kindle paperwhite e-reader", "category": "electronics", "description": "Black digital book tablet inside green folio flip cover." },
+    "found": { "title": "Electronic book device", "category": "electronics", "description": "E-ink reading tablet in sage protective sleeve." }
+  },
+  {
+    "id": 39,
+    "category": "bottle",
+    "spot": "Common Room",
+    "lost": { "title": "Insulated coffee tumbler", "category": "bottle", "description": "Contigo travel thermal mug with push button sip lid." },
+    "found": { "title": "Thermal travel sipper", "category": "bottle", "description": "Metallic commuter flask with autoseal drinking spout." }
+  },
+  {
+    "id": 40,
+    "category": "keys",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Almirah cupboard key", "category": "keys", "description": "Small steel key with blue plastic sheath top." },
+    "found": { "title": "Wardrobe cabinet key", "category": "keys", "description": "Single locker key with blue coated head." }
+  },
+  {
+    "id": 41,
+    "category": "clothing",
+    "spot": "Common Room",
+    "lost": { "title": "Tracksuit sweatpants", "category": "clothing", "description": "Grey cotton joggers with drawstring waist and ankle cuffs." },
+    "found": { "title": "Athletic lounge trousers", "category": "clothing", "description": "Fleece sweat bottoms in heather ash." }
+  },
+  {
+    "id": 42,
+    "category": "electronics",
+    "spot": "Gym & Sports Complex",
+    "lost": { "title": "Bluetooth fitness tracker", "category": "electronics", "description": "Mi Band 7 with black silicone strap and heart rate sensor." },
+    "found": { "title": "Health monitor band", "category": "electronics", "description": "OLED wrist fitness tracker on rubber bracelet." }
+  },
+  {
+    "id": 43,
+    "category": "other",
+    "spot": "Mess / Dining Hall",
+    "lost": { "title": "Sunglasses", "category": "other", "description": "Polarized aviator sun glasses with silver metal frame." },
+    "found": { "title": "Pilot style sunglasses", "category": "other", "description": "Dark tint teardrop shades with wire frame." }
+  },
+  {
+    "id": 44,
+    "category": "documents",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Debit ATM card", "category": "documents", "description": "HDFC platinum chip debit card in name Rohit." },
+    "found": { "title": "Bank payment card", "category": "documents", "description": "Blue Visa chip card found beside book drop." }
+  },
+  {
+    "id": 45,
+    "category": "clothing",
+    "spot": "Laundry Room",
+    "lost": { "title": "Bath towel", "category": "clothing", "description": "Large striped cotton bath sheet in teal and white." },
+    "found": { "title": "Shower drying cloth", "category": "clothing", "description": "Striped terry towel left on washroom rack." }
+  },
+  {
+    "id": 46,
+    "category": "other",
+    "spot": "Gym & Sports Complex",
+    "lost": { "title": "Badminton racquet", "category": "other", "description": "Yonex graphite frame racket in red half-cover case." },
+    "found": { "title": "Shuttlecock bat", "category": "other", "description": "Strung sports racquet in red protective pouch." }
+  },
+  {
+    "id": 47,
+    "category": "electronics",
+    "spot": "Common Room",
+    "lost": { "title": "Portable bluetooth speaker", "category": "electronics", "description": "JBL Clip 4 circular speaker in camouflage print." },
+    "found": { "title": "Mini audio speaker", "category": "electronics", "description": "Camo pattern wireless sound pod with carabiner hook." }
+  },
+  {
+    "id": 48,
+    "category": "bottle",
+    "spot": "1st Floor Corridor",
+    "lost": { "title": "Plastic sports water bottle", "category": "bottle", "description": "Green Nalgene wide mouth litre bottle with volume markings." },
+    "found": { "title": "Hiking water flask", "category": "bottle", "description": "Olive translucent cylindrical bottle with loop lid." }
+  },
+  {
+    "id": 49,
+    "category": "keys",
+    "spot": "Common Room",
+    "lost": { "title": "Keychain with anime pendant", "category": "keys", "description": "Ring of two keys with Naruto acrylic charm attached." },
+    "found": { "title": "Keys with cartoon pendant", "category": "keys", "description": "Pair of room keys on metal hoop with comic character tag." }
+  },
+  {
+    "id": 50,
+    "category": "other",
+    "spot": "Library / Study Area",
+    "lost": { "title": "Graphing geometry ruler set", "category": "other", "description": "Clear plastic drafting ruler, protractor, and set square in pouch." },
+    "found": { "title": "Maths measurement tool set", "category": "other", "description": "Transparent scales and angle tool kit." }
+  }
+]

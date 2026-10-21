@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Post = require('../models/Post');
 const Hostel = require('../models/Hostel');
+const matchingService = require('./matchingService');
 
 // Helper to sanitize post object for response based on user permission
 const sanitizePost = (post, user) => {
@@ -59,6 +60,12 @@ const createPost = async (postData, files, user) => {
     verificationQuestions: postData.type === 'found' ? verificationQuestions : [],
     status: 'open',
     postedBy: user._id,
+  });
+
+  // Asynchronously trigger embedding generation and candidate matching
+  // Handled with retry queue so post creation never fails because of embedding
+  matchingService.processPostEmbeddingAndMatching(post._id).catch((err) => {
+    console.warn(`[PostService] Matching error for post ${post._id}:`, err.message);
   });
 
   const populatedPost = await Post.findById(post._id).populate('postedBy', 'name room email');
@@ -201,6 +208,17 @@ const getSpots = async (hostelId) => {
   return hostel.spots || [];
 };
 
+const getPostMatches = async (postId, user) => {
+  // Ensure post belongs to user's hostel
+  const post = await Post.findOne({ _id: postId, hostel: user.hostel });
+  if (!post) {
+    const error = new Error('Post not found in your hostel');
+    error.statusCode = 404;
+    throw error;
+  }
+  return matchingService.getMatchesForPost(postId, user.hostel);
+};
+
 module.exports = {
   createPost,
   getPosts,
@@ -208,4 +226,5 @@ module.exports = {
   markReturned,
   deletePost,
   getSpots,
+  getPostMatches,
 };
